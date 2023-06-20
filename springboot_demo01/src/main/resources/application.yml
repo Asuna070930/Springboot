@@ -1,0 +1,14 @@
+server:
+  port: 8082
+city: cd
+user:
+  username: liuyifei
+  password: huge
+  nicknames:
+    - saber
+    - asuna
+  mobiles:
+    - num: 2233
+      brand: bilibili
+    - num: 2333
+      brand: iphone

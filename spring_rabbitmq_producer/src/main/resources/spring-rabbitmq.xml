@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context
+       https://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/rabbit
+       http://www.springframework.org/schema/rabbit/spring-rabbit.xsd">
+
+
+    <!--    引入rabbitmq的配置文件 属性占位符-->
+    <context:property-placeholder location="classpath:rabbitmq.properties"></context:property-placeholder>
+    <!--    读取配置文件-->
+    <rabbit:connection-factory id="connectionFactory"
+                               host="${rabbitmq.host}"
+                               port="${rabbitmq.port}"
+                               username="${rabbitmq.username}"
+                               password="${rabbitmq.password}"
+                               virtual-host="${rabbitmq.virtual-host}"
+                               publisher-confirms="true"
+                               publisher-returns="true"
+    ></rabbit:connection-factory>
+    <!--    需要把connection-factory连接工厂对象,交给Rabbit admin对象
+        Rabbit-admin : Rabbit管理器,创建交换机,创建队列,绑定交换机和队列-->
+    <rabbit:admin connection-factory="connectionFactory"></rabbit:admin>
+    <!--    声明队列-->
+    <rabbit:queue name="spring_queue"></rabbit:queue>
+
+    <!--    广播模式,必须创建交换机,交换机必须跟队列进行绑定,不需要设置路由规则-->
+    <rabbit:queue name="spring_fanout_queue_1"></rabbit:queue>
+    <rabbit:queue name="spring_fanout_queue_2"></rabbit:queue>
+
+    <!--    声明交换机-->
+    <rabbit:fanout-exchange name="spring_fanout_exchange">
+        <!--        设置交换机必须跟队列进行绑定-->
+        <rabbit:bindings>
+            <rabbit:binding queue="spring_fanout_queue_1"></rabbit:binding>
+            <rabbit:binding queue="spring_fanout_queue_2"></rabbit:binding>
+        </rabbit:bindings>
+    </rabbit:fanout-exchange>
+
+
+    <!--    通配符模式-->
+    <!--定义广播交换机中的持久化队列，不存在则自动创建-->
+    <rabbit:queue id="spring_topic_queue_star" name="spring_topic_queue_star" auto-declare="true"/>
+    <!--定义广播交换机中的持久化队列，不存在则自动创建-->
+    <rabbit:queue id="spring_topic_queue_well" name="spring_topic_queue_well" auto-declare="true"/>
+    <!--定义广播交换机中的持久化队列，不存在则自动创建-->
+    <rabbit:queue id="spring_topic_queue_well2" name="spring_topic_queue_well2" auto-declare="true"/>
+
+    <rabbit:topic-exchange id="spring_topic_exchange" name="spring_topic_exchange" auto-declare="true">
+        <rabbit:bindings>
+            <rabbit:binding pattern="atguigu.*" queue="spring_topic_queue_star"/>
+            <rabbit:binding pattern="atguigu.#" queue="spring_topic_queue_well"/>
+            <rabbit:binding pattern="guigu.#" queue="spring_topic_queue_well2"/>
+        </rabbit:bindings>
+    </rabbit:topic-exchange>
+
+
+    <!--    定向发送消息-->
+    <!--    id: 表示唯一标识符,可添加可不添加-->
+    <rabbit:queue name="test_queue_confirm" id="test_queue_confirm"></rabbit:queue>
+    <!--direct : 表示定向发送消息-->
+    <rabbit:direct-exchange name="test_exchange_confirm">
+        <rabbit:bindings>
+            <rabbit:binding queue="test_queue_confirm" key="confirm"></rabbit:binding>
+        </rabbit:bindings>
+    </rabbit:direct-exchange>
+
+
+    <!--    任何一个商城,都有30min的考虑事件
+    如果用户点击商品添加购物车,在30min之内,就算用户没有支付,别人也无法购买此商品
+    如果到了30min,判断用户是否已经支付,如果已支付,就出库存,如果没有支付,就回滚仓库
+    -->
+    <rabbit:queue name="test_queue_ttl">
+        <rabbit:queue-arguments>
+            <entry key="x-message-ttl" value="10000" value-type="java.lang.Integer"></entry>
+        </rabbit:queue-arguments>
+    </rabbit:queue>
+
+    <rabbit:topic-exchange name="test_exchange_ttl">
+        <rabbit:bindings>
+            <rabbit:binding pattern="ttl.#" queue="test_queue_ttl"></rabbit:binding>
+        </rabbit:bindings>
+    </rabbit:topic-exchange>
+
+
+    <!--    创建死信交换机队列
+            需要创建两组交换机和队列
+    -->
+    <!--    声明正常的交换机和队列-->
+    <rabbit:queue name="test_queue_dlx">
+        <rabbit:queue-arguments>
+            <!--            表示队列可以容纳的最大长度 : 长度为10-->
+            <entry key="x-max-length" value="10" value-type="java.lang.Integer"></entry>
+            <entry key="x-message-ttl" value="10000" value-type="java.lang.Integer"></entry>
+            <entry key="x-dead-letter-exchange" value="exchange_dlx"></entry>
+            <entry key="x-dead-letter-routing-key" value="dlx.abc"></entry>
+        </rabbit:queue-arguments>
+    </rabbit:queue>
+    <rabbit:topic-exchange name="test_exchange_dlx">
+        <!--        交换机需要跟上面的队列进行绑定-->
+        <rabbit:bindings>
+            <rabbit:binding pattern="test.dlx.#" queue="test_queue_dlx"></rabbit:binding>
+        </rabbit:bindings>
+    </rabbit:topic-exchange>
+
+    <!--    声明死掉的交换机和队列-->
+    <rabbit:queue name="queue_dlx"></rabbit:queue>
+    <rabbit:topic-exchange name="exchange_dlx">
+        <rabbit:bindings>
+            <rabbit:binding pattern="dlx.#" queue="queue_dlx"></rabbit:binding>
+        </rabbit:bindings>
+    </rabbit:topic-exchange>
+
+
+    <!--    延迟队列-->
+    <rabbit:queue name="order_queue">
+        <rabbit:queue-arguments>
+            <entry key="x-message-ttl" value="10000" value-type="java.lang.Integer"></entry>
+            <entry key="x-dead-letter-exchange" value="order_exchange_dlx]"></entry>
+            <entry key="x-dead-letter-routing-key" value="dlx.order.cancel"></entry>
+        </rabbit:queue-arguments>
+    </rabbit:queue>
+    <rabbit:topic-exchange name="order_exchange">
+        <rabbit:bindings>
+            <rabbit:binding pattern="order.#" queue="order_queue"></rabbit:binding>
+        </rabbit:bindings>
+    </rabbit:topic-exchange>
+
+    <rabbit:queue name="order_queue_dlx"></rabbit:queue>
+    <rabbit:topic-exchange name="order_exchange_dlx">
+        <rabbit:bindings>
+            <rabbit:binding pattern="dlx.order.#" queue="order_queue_dlx"></rabbit:binding>
+        </rabbit:bindings>
+    </rabbit:topic-exchange>
+
+
+    <!--    定义一个发送消息的模板-->
+    <rabbit:template id="rabbitTemplate" connection-factory="connectionFactory"/>
+</beans>

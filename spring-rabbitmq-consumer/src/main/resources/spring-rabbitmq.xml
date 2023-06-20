@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:rabbit="http://www.springframework.org/schema/rabbit"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       http://www.springframework.org/schema/context
+       https://www.springframework.org/schema/context/spring-context.xsd
+       http://www.springframework.org/schema/rabbit
+       http://www.springframework.org/schema/rabbit/spring-rabbit.xsd">
+    <!--加载配置文件-->
+    <context:property-placeholder location="classpath:rabbitmq.properties"/>
+
+    <!--定义rabbitmq connectionFactory -->
+    <rabbit:connection-factory id="connectionFactory" host="${rabbitmq.host}"
+                               port="${rabbitmq.port}"
+                               username="${rabbitmq.username}"
+                               password="${rabbitmq.password}"
+                               virtual-host="${rabbitmq.virtual-host}"/>
+    <!--消费者是一个监听器,需要时时刻刻监听队列,如果队列里面有消息,需要立马提取出来-->
+    <!--创建一个监听对象-->
+    <!--<bean id="springQueueListener" class="com.atguigu.rabbitmq.listener.SpringQueueListener"/>-->
+    <!--<bean id="fanoutQueueListener1" class="com.atguigu.rabbitmq.listener.fanoutQueueListener1"/>-->
+    <!--<bean id="fanoutQueueListener2" class="com.atguigu.rabbitmq.listener.fanoutQueueListener2"/>-->
+    <!--<bean id="ackListener" class="com.atguigu.rabbitmq.listener.AckListener"/>-->
+    <bean id="qosListener" class="com.atguigu.rabbitmq.listener.QosListener"/>
+
+    <!--acknowledge="none" : 表示没有任何确认机制-->
+    <!--acknowledge="manual" : 表示手动签收消息-->
+    <!--acknowledge="auto" : 表示自动签收-->
+    <!--prefetch="1" : 一次性只取一条消息-->
+    <rabbit:listener-container connection-factory="connectionFactory" acknowledge="manual" prefetch="1">
+        <!--想监听哪个队列需要设置哪个队列-->
+        <!--<rabbit:listener ref="springQueueListener" queue-names="spring_queue"></rabbit:listener>-->
+        <!--需要注意: 写下的监听器必须把上面的监听器注释掉,避免干扰,影响测试结果-->
+        <!--<rabbit:listener ref="fanoutQueueListener1" queue-names="spring_fanout_queue_1"></rabbit:listener>-->
+        <!--<rabbit:listener ref="fanoutQueueListener1" queue-names="spring_fanout_queue_2"></rabbit:listener>-->
+        <!--<rabbit:listener ref="ackListener" queue-names="test_queue_confirm"></rabbit:listener>-->
+        <rabbit:listener ref="qosListener" queue-names="test_queue_confirm"></rabbit:listener>
+
+    </rabbit:listener-container>
+</beans>

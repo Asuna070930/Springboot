@@ -1,0 +1,7 @@
+logging:
+  level:
+    com.atguigu.dao: debug # 配置日志
+spring:
+  redis:
+    host: localhost
+    port: 6379

@@ -1,0 +1,8 @@
+# 配置数据库连接池信息，上线环境
+spring:
+  jdbc:
+    datasource:
+      driverClassName: com.mysql.jdbc.Driver
+      url: jdbc:mysql:///business
+      username: business
+      password: business

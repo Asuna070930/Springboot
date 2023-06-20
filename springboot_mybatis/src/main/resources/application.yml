@@ -1,0 +1,13 @@
+
+mybatis:
+  type-aliases-package: com.atguigu.pojo
+  mapper-locations: classpath:com/atguigu/dao/*.xml
+spring:
+  datasource:
+    username: ENC(VLcO85ZZE9jYxIMUUHVDbw==)
+    password: ENC(UWbaORj1CidvKCTStE3S1A==)
+    url: ENC(Y+43UfYEkv4bjX7wdnl+TWi00fxcXO8BbYzA3k2p7NrKR+mH+Ec4PqdN5n8VDXfcjE3sfkB+L+/s2W7HWhAXEgaJfLk23bPPvLzckcGJYz8=)
+    driver-class-name: com.mysql.cj.jdbc.Driver
+jasypt:
+  encryptor: #加密器
+    password: 123456

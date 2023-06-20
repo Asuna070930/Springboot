@@ -1,0 +1,5 @@
+spring:
+  mail:
+    host: smtp.qq.com
+    username: 956805174@qq.com
+    password: dcdbjiqiazgvbbei
